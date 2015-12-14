@@ -24,10 +24,6 @@ def decode_datafile(zipfile, txtfile):
         buf.write(unpacked)
         buf.seek(0)
         lines_count = int_from_bytes(buf.read(4)) #Первые 4 байта - кол-во строк
-
-
-            
-
         result = []
         
         file_path, fn = os.path.split(zipfile)
@@ -75,12 +71,13 @@ def encode_datafile(txtfile, zipfile, encoding="cp1251"):
     _zip.write(deflate)
     _zip.close()
     
-
+"""Функция рекурсивного обхода и декодирования файлов
+Ищет файлы в каталоге data/ и сохраняет в data_src/"""
 def decode_all_files(directory=""):
     dataPath = joinPath(directory, 'data') #Исходная директория
     if not exists(dataPath):
         print("Не найден каталог 'data'")
-        #return False
+        return
 
     DATA_SRC = 'data_src'
 
@@ -95,8 +92,8 @@ def decode_all_files(directory=""):
                 new_path = root.replace('data',data_src_path)
                 if not exists(new_path):
                     os.mkdir (new_path)
-                print(joinPath(root,file), "...OK")
-                decode_datafile(joinPath(root,file), joinPath(new_path,file))
+                print(joinPath(root,file), "... OK")
+                decode_datafile(joinPath(root,file), joinPath(new_path,file)+".txt")
             
 
 
