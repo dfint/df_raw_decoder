@@ -9,6 +9,7 @@ from os.path import exists
 int_from_bytes = lambda x: int.from_bytes(x, byteorder="little")
 from_int16 = lambda x: x.to_bytes(2, byteorder="little")
 from_int32 = lambda x: x.to_bytes(4, byteorder="little")
+DATA_SRC = 'data_src'
 
 """Функция декодирования текстового raw-файла"""
 def decode_datafile(zipfile, txtfile):
@@ -39,8 +40,8 @@ def decode_datafile(zipfile, txtfile):
             _str = buf.read(_len)
 
             if indexFile:
-                decoded = [255-(i%5)-c for i,c in enumerate(_str)]
-                result.append(bytes(decoded))
+                decoded = bytes([255-(i%5)-c for i,c in enumerate(_str)])
+                result.append(decoded)
             else:
                 result.append(_str)
    
@@ -50,18 +51,28 @@ def decode_datafile(zipfile, txtfile):
         print('Некорректная длина файла', filename)
         
 """Функция кодирования текстового raw-файла"""
-def encode_datafile(txtfile, zipfile, encoding="cp1251"):
+def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
 
-    lines = [line.strip() for line in open(txtfile, 'rt').readlines()]
+    lines = [line.strip() for line in open(txtfile, 'rt', encoding=_encoding).readlines()]
     buf = BytesIO()
 
     buf.write(from_int32(len(lines)))
+
+    file_path, fn = os.path.split(zipfile)
+    indexFile = False
+    if fn == 'index': #Файл index имеет туже структуру, но немного "зашифрован"
+        indexFile = True
 
     for line in lines:
         _len = len(line)
         buf.write(from_int32(_len))
         buf.write(from_int16(_len))
-        buf.write(line.encode(encoding))
+        if indexFile:
+            print(bytes(line.encode()))
+            encoded = bytes([255-(i%5)-c for i,c in enumerate(line.encode(_encoding))])
+            buf.write(encoded)
+        else:
+            buf.write(line.encode(_encoding))
 
     deflate = zlib.compress(buf.getvalue())
     buf.close()
@@ -70,7 +81,8 @@ def encode_datafile(txtfile, zipfile, encoding="cp1251"):
     _zip.write(from_int32(len(deflate)))
     _zip.write(deflate)
     _zip.close()
-    
+
+
 """Функция рекурсивного обхода и декодирования файлов
 Ищет файлы в каталоге data/ и сохраняет в data_src/"""
 def decode_all_files(directory=""):
@@ -79,29 +91,40 @@ def decode_all_files(directory=""):
         print("Не найден каталог 'data'")
         return
 
-    DATA_SRC = 'data_src'
-
     data_src_path = joinPath(directory, DATA_SRC)
 
-    #Получаем список всех файлов, у которых нет расширения
-    all_files = []
+    #Пробуем обрабатывать все файлы, у которых нет расширения
     for root, directories, files in os.walk(dataPath):
         for file in files:
             fn, ext = os.path.splitext(file)
             if ext == "":
-                new_path = root.replace('data',data_src_path)
+                new_path = root.replace('data', data_src_path)
                 if not exists(new_path):
-                    os.mkdir (new_path)
+                    os.mkdir(new_path)
                 print(joinPath(root,file), "... OK")
-                decode_datafile(joinPath(root,file), joinPath(new_path,file)+".txt")
+                decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
             
 
 
+def encode_all_files(new_directory = "data_new"):
+    if not exists(DATA_SRC):
+        print("Не найден каталог data_src")
+        return
+
+    for root, directories, files in os.walk(DATA_SRC):
+        for file in files:
+            fn, ext = os.path.splitext(file) #Получаем имя файла без .txt
+            txtfile = joinPath(root, file)   #Полный путь исходного файла
+            new_path = root.replace(DATA_SRC, new_directory)
+            if not exists(new_path):
+                    os.mkdir (new_path)
+            print(joinPath(root, file), "... OK")
+            zipfile = joinPath(new_path, fn)
+            encode_datafile(txtfile, zipfile)
+
+
 decode_all_files()
-
-
-
-
+encode_all_files()
 
 
 
