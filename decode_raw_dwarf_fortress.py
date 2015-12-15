@@ -6,7 +6,7 @@ import os
 from os.path import join as joinPath
 from os.path import exists
 
-int_from_bytes = lambda x: int.from_bytes(x, byteorder="little")
+from_bytes = lambda x: int.from_bytes(x, byteorder="little")
 from_int16 = lambda x: x.to_bytes(2, byteorder="little")
 from_int32 = lambda x: x.to_bytes(4, byteorder="little")
 DATA_SRC = 'data_src'
@@ -15,8 +15,9 @@ DATA_SRC = 'data_src'
 def decode_datafile(zipfile, txtfile):
 
     _zip = open(zipfile, 'rb')
-    zip_length = int_from_bytes(_zip.read(4)) #Первые 4 байта - длина последующего архива
+    zip_length = from_bytes(_zip.read(4)) #Первые 4 байта - длина последующего архива
     deflate = _zip.read()
+    _zip.close()
 
     if zip_length == len(deflate):
         #Обработка файла
@@ -24,7 +25,7 @@ def decode_datafile(zipfile, txtfile):
         buf = BytesIO()
         buf.write(unpacked)
         buf.seek(0)
-        lines_count = int_from_bytes(buf.read(4)) #Первые 4 байта - кол-во строк
+        lines_count = from_bytes(buf.read(4)) #Первые 4 байта - кол-во строк
         result = []
         
         file_path, fn = os.path.split(zipfile)
@@ -33,19 +34,18 @@ def decode_datafile(zipfile, txtfile):
             indexFile = True
 
         for line in range(lines_count):
-            _len = int_from_bytes(buf.read(4)) #Длина строки
-            _len2 = int_from_bytes(buf.read(2)) #Она же еще раз?
+            _len = from_bytes(buf.read(4)) #Длина строки
+            _len2 = from_bytes(buf.read(2)) #Она же еще раз?
             if _len != _len2:
                 print("Некорректная длина в строке:", line)
             _str = buf.read(_len)
 
             if indexFile:
-                decoded = bytes([255-(i%5)-c for i,c in enumerate(_str)])
-                result.append(decoded)
-            else:
-                result.append(_str)
+                _str = bytes([255-(i%5)-c for i,c in enumerate(_str)])
+
+            result.append(_str.decode() + "\n") #Лучше чтобы все было сохранено в UTF-8
    
-        open(txtfile, 'wb').write(b"\n".join(result))
+        open(txtfile, 'wt').writelines(result)
          
     else:
         print('Некорректная длина файла', filename)
@@ -53,10 +53,10 @@ def decode_datafile(zipfile, txtfile):
 """Функция кодирования текстового raw-файла"""
 def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
 
-    lines = [line.strip() for line in open(txtfile, 'rt', encoding=_encoding).readlines()]
+    lines = [line[:-1] for line in open(txtfile, 'rt').readlines()]
     buf = BytesIO()
 
-    buf.write(from_int32(len(lines)))
+    buf.write(from_int32(len(lines))) #Записываем количество строк
 
     file_path, fn = os.path.split(zipfile)
     indexFile = False
@@ -68,7 +68,7 @@ def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
         buf.write(from_int32(_len))
         buf.write(from_int16(_len))
         if indexFile:
-            print(bytes(line.encode()))
+            #print(bytes(line.encode()))
             encoded = bytes([255-(i%5)-c for i,c in enumerate(line.encode(_encoding))])
             buf.write(encoded)
         else:
@@ -101,7 +101,7 @@ def decode_all_files(directory=""):
                 new_path = root.replace('data', data_src_path)
                 if not exists(new_path):
                     os.mkdir(new_path)
-                print(joinPath(root,file), "... OK")
+                #print(joinPath(root,file), "... OK")
                 decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
             
 
@@ -118,13 +118,12 @@ def encode_all_files(new_directory = "data_new"):
             new_path = root.replace(DATA_SRC, new_directory)
             if not exists(new_path):
                     os.mkdir (new_path)
-            print(joinPath(root, file), "... OK")
             zipfile = joinPath(new_path, fn)
             encode_datafile(txtfile, zipfile)
 
 
-decode_all_files()
-encode_all_files()
+#decode_all_files()
+encode_all_files("data")
 
 
-
+#encode_datafile('data_src/index.txt', 'data/index')
