@@ -64,15 +64,15 @@ def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
         indexFile = True
 
     for line in lines:
+        line = line.encode(_encoding)
         _len = len(line)
         buf.write(from_int32(_len))
         buf.write(from_int16(_len))
         if indexFile:
-            #print(bytes(line.encode()))
-            encoded = bytes([255-(i%5)-c for i,c in enumerate(line.encode(_encoding))])
+            encoded = bytes([255-(i%5)-c for i,c in enumerate(line)])
             buf.write(encoded)
         else:
-            buf.write(line.encode(_encoding))
+            buf.write(line)
 
     deflate = zlib.compress(buf.getvalue())
     buf.close()
@@ -101,7 +101,6 @@ def decode_all_files(directory=""):
                 new_path = root.replace('data', data_src_path)
                 if not exists(new_path):
                     os.mkdir(new_path)
-                #print(joinPath(root,file), "... OK")
                 decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
             
 
