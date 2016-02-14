@@ -1,4 +1,4 @@
-#/usr/bin/python3.4
+#!/usr/bin/python3
 
 import zlib
 from io import BytesIO
@@ -121,8 +121,40 @@ def encode_all_files(new_directory = "data_new"):
             encode_datafile(txtfile, zipfile)
 
 
-#decode_all_files()
-encode_all_files("data")
+usage="""Dwarf Fortress RAW декодер/кодер
+использование:
+df_enc.py {--decode | --encode} <inputDir>  <outputDir>
+df_enc.py {--decode | --encode} <inputFile> <outputFile> 
+"""
+
+import sys
+from os.path import exists, isfile, isdir
+
+if __name__ != '__main__':
+    exit()
+    
+if len(sys.argv) != 4:
+    print(usage)
+    exit()
+
+name, action, frompath, topath = sys.argv
+
+if action in ["--decode", "--encode"]:
+    if exists(frompath):
+        if isdir(frompath):
+            #Если цель - каталог
+            pass
+        elif isfile(frompath):
+            #Если цель - один файл
+            pass
+        else:
+            print("Не распознан тип файла")
+    
+else:
+    print(usage)
+    exit()
 
 
-#encode_datafile('data_src/index.txt', 'data/index')
+
+
+
