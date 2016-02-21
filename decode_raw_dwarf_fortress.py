@@ -85,10 +85,10 @@ def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
 
 """Функция рекурсивного обхода и декодирования файлов
 Ищет файлы в каталоге data/ и сохраняет в data_src/"""
-def decode_all_files(directory=""):
-    dataPath = joinPath(directory, 'data') #Исходная директория
+def decode_directory(directory="", outdir="data"):
+    dataPath = joinPath(directory, outdir) #Исходная директория
     if not exists(dataPath):
-        print("Не найден каталог 'data'")
+        print("Не найден каталог", outdir)
         return
 
     data_src_path = joinPath(directory, DATA_SRC)
@@ -98,14 +98,14 @@ def decode_all_files(directory=""):
         for file in files:
             fn, ext = os.path.splitext(file)
             if ext == "":
-                new_path = root.replace('data', data_src_path)
+                new_path = root.replace(outdir, data_src_path)
                 if not exists(new_path):
                     os.mkdir(new_path)
                 decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
             
 
 
-def encode_all_files(new_directory = "data_new"):
+def encode_directory(inputdir, outputdir):
     if not exists(DATA_SRC):
         print("Не найден каталог data_src")
         return
@@ -123,8 +123,13 @@ def encode_all_files(new_directory = "data_new"):
 
 usage="""Dwarf Fortress RAW декодер/кодер
 использование:
-df_enc.py {--decode | --encode} <inputDir>  <outputDir>
-df_enc.py {--decode | --encode} <inputFile> <outputFile> 
+df_enc.py [настройки] <inputDir>  <outputDir>
+df_enc.py [настройки] <inputFile> <outputFile>
+
+Настройки:
+--decode - декодировать источник
+--encode - закодировать источник
+--y - отвечать ДА на вопрос о перезаписи
 """
 
 import sys
@@ -143,12 +148,27 @@ if action in ["--decode", "--encode"]:
     if exists(frompath):
         if isdir(frompath):
             #Если цель - каталог
-            pass
+            if exists(topath):
+                answer = input("Каталог %s существует, перезаписать? [y/N]" % topath)
+                if not (answer in ["y","Y"]):
+                    exit()
+            
+            #Обработка каталога
+            pass 
+                
         elif isfile(frompath):
             #Если цель - один файл
+            if exists(topath):
+                answer = input("Файл %s существует, перезаписать? [y/N]" % topath)
+                if not (answer in ["y","Y"]):
+                    exit()
+                    
+            #Обработка файла
             pass
         else:
             print("Не распознан тип файла")
+    else:
+        print("Заданный путь к источнику не существует")
     
 else:
     print(usage)
