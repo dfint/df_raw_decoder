@@ -3,13 +3,11 @@
 import zlib
 from io import BytesIO
 import os
-from os.path import join as joinPath
-from os.path import exists
+from os.path import isfile, isdir, exists, realpath, join as joinPath
 
 from_bytes = lambda x: int.from_bytes(x, byteorder="little")
 from_int16 = lambda x: x.to_bytes(2, byteorder="little")
 from_int32 = lambda x: x.to_bytes(4, byteorder="little")
-DATA_SRC = 'data_src'
 
 """Функция декодирования текстового raw-файла"""
 def decode_datafile(zipfile, txtfile):
@@ -44,7 +42,11 @@ def decode_datafile(zipfile, txtfile):
                 _str = bytes([255-(i%5)-c for i,c in enumerate(_str)])
 
             result.append(_str.decode() + "\n") #Лучше чтобы все было сохранено в UTF-8
-   
+
+        _dir = os.path.dirname(txtfile)
+        if not exists(_dir):
+            os.mkdir(_dir)
+            
         open(txtfile, 'wt').writelines(result)
          
     else:
@@ -77,6 +79,10 @@ def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
     deflate = zlib.compress(buf.getvalue())
     buf.close()
 
+    _dir = os.path.dirname(zipfile)
+    if not exists(_dir):
+        os.mkdir(_dir)
+
     _zip = open(zipfile, 'wb')
     _zip.write(from_int32(len(deflate)))
     _zip.write(deflate)
@@ -85,40 +91,27 @@ def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
 
 """Функция рекурсивного обхода и декодирования файлов
 Ищет файлы в каталоге data/ и сохраняет в data_src/"""
-def decode_directory(directory="", outdir="data"):
-    dataPath = joinPath(directory, outdir) #Исходная директория
-    if not exists(dataPath):
-        print("Не найден каталог", outdir)
-        return
-
-    data_src_path = joinPath(directory, DATA_SRC)
+def decode_directory(directory, outdir):
 
     #Пробуем обрабатывать все файлы, у которых нет расширения
-    for root, directories, files in os.walk(dataPath):
+    for root, directories, files in os.walk(frompath):
         for file in files:
             fn, ext = os.path.splitext(file)
             if ext == "":
-                new_path = root.replace(outdir, data_src_path)
-                if not exists(new_path):
-                    os.mkdir(new_path)
+                new_path = root.replace(frompath, topath)
                 decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
             
 
 
 def encode_directory(inputdir, outputdir):
-    if not exists(DATA_SRC):
-        print("Не найден каталог data_src")
-        return
 
-    for root, directories, files in os.walk(DATA_SRC):
+    #Пробуем обрабатывать все файлы с расширением .txt
+    for root, directories, files in os.walk(inputdir):
         for file in files:
             fn, ext = os.path.splitext(file) #Получаем имя файла без .txt
-            txtfile = joinPath(root, file)   #Полный путь исходного файла
-            new_path = root.replace(DATA_SRC, new_directory)
-            if not exists(new_path):
-                    os.mkdir (new_path)
-            zipfile = joinPath(new_path, fn)
-            encode_datafile(txtfile, zipfile)
+            if ext == ".txt":
+                new_path = root.replace(inputdir, outputdir)
+                encode_datafile(joinPath(root, file), joinPath(new_path, fn))
 
 
 usage="""Dwarf Fortress RAW декодер/кодер
@@ -127,44 +120,70 @@ df_enc.py [настройки] <inputDir>  <outputDir>
 df_enc.py [настройки] <inputFile> <outputFile>
 
 Настройки:
---decode - декодировать источник
---encode - закодировать источник
---y - отвечать ДА на вопрос о перезаписи
+-d  --decode - декодировать источник
+-e  --encode - закодировать источник
+-y  --yes    - отвечать ДА на вопрос о перезаписи
 """
 
+func = {"directory":{"--decode":decode_directory,"--encode":encode_directory,
+                           "-d":decode_directory,      "-e":encode_directory},
+        "file"     :{"--decode":decode_datafile, "--encode":encode_datafile,
+                           "-d":decode_datafile,       "-e":encode_datafile}}
+
 import sys
-from os.path import exists, isfile, isdir
 
 if __name__ != '__main__':
     exit()
     
-if len(sys.argv) != 4:
+if len(sys.argv) < 4:
     print(usage)
     exit()
 
-name, action, frompath, topath = sys.argv
+action = ""
+overwrite = False
+frompath = sys.argv[-2]
+topath = sys.argv[-1]
+
+for option in sys.argv[1:-2]:
+    if option in ["--decode", "--encode", "-d", "-e"]:
+        action = option
+    elif option in ["--yes", "-y"]:
+        overwrite = True
+
+frompath = realpath(frompath)
+topath   = realpath(topath)
+
+print("action:", action)
+print("overWrite:",overwrite)
+print("frompath:", frompath)
+print("topath:", topath)
+
 
 if action in ["--decode", "--encode"]:
     if exists(frompath):
         if isdir(frompath):
             #Если цель - каталог
             if exists(topath):
-                answer = input("Каталог %s существует, перезаписать? [y/N]" % topath)
-                if not (answer in ["y","Y"]):
-                    exit()
+                if not overwrite:
+                    answer = input("Каталог %s существует, перезаписать? [y/N] " % topath)
+                    if not (answer in ["y","Y"]):
+                        print("Прервано пользователем")
+                        exit()
             
-            #Обработка каталога
-            pass 
+            #Обработка каталога, в зависимости от выбранного действия
+            func["directory"][action](frompath, topath)
                 
         elif isfile(frompath):
             #Если цель - один файл
             if exists(topath):
-                answer = input("Файл %s существует, перезаписать? [y/N]" % topath)
-                if not (answer in ["y","Y"]):
-                    exit()
+                if not overwrite:
+                    answer = input("Файл %s существует, перезаписать? [y/N] " % topath)
+                    if not (answer in ["y","Y"]):
+                        print("Прервано пользователем")
+                        exit()
                     
-            #Обработка файла
-            pass
+            #Обработка файла, в зависимости от выбранного действия
+            func["file"][action](frompath, topath)
         else:
             print("Не распознан тип файла")
     else:
