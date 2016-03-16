@@ -35,7 +35,7 @@ def decode_datafile(zipfile, txtfile):
             _len = from_bytes(buf.read(4)) #Длина строки
             _len2 = from_bytes(buf.read(2)) #Она же еще раз?
             if _len != _len2:
-                print("Некорректная длина в строке:", line)
+                print("Incorrect length of the line:", line)
             _str = buf.read(_len)
 
             if indexFile:
@@ -50,7 +50,7 @@ def decode_datafile(zipfile, txtfile):
         open(txtfile, 'wt').writelines(result)
          
     else:
-        print('Некорректная длина файла', filename)
+        print('Incorrect length of the file:', filename)
         
 """Функция кодирования текстового raw-файла"""
 def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
@@ -114,15 +114,15 @@ def encode_directory(inputdir, outputdir):
                 encode_datafile(joinPath(root, file), joinPath(new_path, fn))
 
 
-usage="""Dwarf Fortress RAW декодер/кодер
-использование:
-df_enc.py [настройки] <inputDir>  <outputDir>
-df_enc.py [настройки] <inputFile> <outputFile>
+usage="""Dwarf Fortress RAW decoder/encoder
+Usage:
+df_enc.py [options] <inputDir>  <outputDir>
+df_enc.py [options] <inputFile> <outputFile>
 
-Настройки:
--d  --decode - декодировать источник
--e  --encode - закодировать источник
--y  --yes    - отвечать ДА на вопрос о перезаписи
+Options:
+-d  --decode - decode files from the source directory
+-e  --encode - encode files from the source directory
+-y  --yes    - force overwrite of the existing files/directories
 """
 
 func = {"directory":{"--decode":decode_directory,"--encode":encode_directory,
@@ -165,9 +165,9 @@ if action in ["--decode", "--encode"]:
             #Если цель - каталог
             if exists(topath):
                 if not overwrite:
-                    answer = input("Каталог %s существует, перезаписать? [y/N] " % topath)
+                    answer = input("Directory %s already exists, overwrite? [y/N] " % topath)
                     if not (answer in ["y","Y"]):
-                        print("Прервано пользователем")
+                        print("Interrupted by the user")
                         exit()
             
             #Обработка каталога, в зависимости от выбранного действия
@@ -177,23 +177,18 @@ if action in ["--decode", "--encode"]:
             #Если цель - один файл
             if exists(topath):
                 if not overwrite:
-                    answer = input("Файл %s существует, перезаписать? [y/N] " % topath)
+                    answer = input("File %s already exists, overwrite? [y/N] " % topath)
                     if not (answer in ["y","Y"]):
-                        print("Прервано пользователем")
+                        print("Interrupted by the user")
                         exit()
                     
             #Обработка файла, в зависимости от выбранного действия
             func["file"][action](frompath, topath)
         else:
-            print("Не распознан тип файла")
+            print("File type not recognized")
     else:
-        print("Заданный путь к источнику не существует")
+        print("Given path of the source directory doesn't exist")
     
 else:
     print(usage)
     exit()
-
-
-
-
-
