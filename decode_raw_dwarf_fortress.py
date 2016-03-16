@@ -11,7 +11,6 @@ from_int32 = lambda x: x.to_bytes(4, byteorder="little")
 
 """Функция декодирования текстового raw-файла"""
 def decode_datafile(zipfile, txtfile):
-
     _zip = open(zipfile, 'rb')
     zip_length = from_bytes(_zip.read(4)) #Первые 4 байта - длина последующего архива
     deflate = _zip.read()
@@ -41,17 +40,19 @@ def decode_datafile(zipfile, txtfile):
             if indexFile:
                 _str = bytes([255-(i%5)-c for i,c in enumerate(_str)])
 
-            result.append(_str.decode() + "\n") #Лучше чтобы все было сохранено в UTF-8
+            result.append(_str)
 
         _dir = os.path.dirname(txtfile)
         if not exists(_dir):
             os.mkdir(_dir)
             
-        open(txtfile, 'wt').writelines(result)
+        with open(txtfile, 'wb') as out_file:
+            for line in result:
+                out_file.write(line + b'\n')
          
     else:
         print('Incorrect length of the file:', filename)
-        
+
 """Функция кодирования текстового raw-файла"""
 def encode_datafile(txtfile, zipfile):
 
