@@ -53,9 +53,9 @@ def decode_datafile(zipfile, txtfile):
         print('Incorrect length of the file:', filename)
         
 """Функция кодирования текстового raw-файла"""
-def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
+def encode_datafile(txtfile, zipfile):
 
-    lines = [line[:-1] for line in open(txtfile, 'rt').readlines()]
+    lines = [line.rstrip('\n\r') for line in open(txtfile, 'rb').readlines()]
     buf = BytesIO()
 
     buf.write(from_int32(len(lines))) #Записываем количество строк
@@ -66,7 +66,6 @@ def encode_datafile(txtfile, zipfile, _encoding="cp1251"):
         indexFile = True
 
     for line in lines:
-        line = line.encode(_encoding)
         _len = len(line)
         buf.write(from_int32(_len))
         buf.write(from_int16(_len))
