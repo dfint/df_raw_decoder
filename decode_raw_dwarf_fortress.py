@@ -55,7 +55,7 @@ def decode_datafile(zipfile, txtfile):
 """Функция кодирования текстового raw-файла"""
 def encode_datafile(txtfile, zipfile):
     with open(txtfile, 'rb') as txt:
-        lines = [line.rstrip('\n\r') for line in txt.readlines()]
+        lines = [line.rstrip(b'\n\r') for line in txt.readlines()]
     
     buf = BytesIO()
 
