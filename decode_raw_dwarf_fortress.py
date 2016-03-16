@@ -11,10 +11,9 @@ from_int32 = lambda x: x.to_bytes(4, byteorder="little")
 
 """Функция декодирования текстового raw-файла"""
 def decode_datafile(zipfile, txtfile):
-    _zip = open(zipfile, 'rb')
-    zip_length = from_bytes(_zip.read(4)) #Первые 4 байта - длина последующего архива
-    deflate = _zip.read()
-    _zip.close()
+    with open(zipfile, 'rb') as _zip:
+        zip_length = from_bytes(_zip.read(4)) #Первые 4 байта - длина последующего архива
+        deflate = _zip.read()
 
     if zip_length == len(deflate):
         #Обработка файла
@@ -55,8 +54,9 @@ def decode_datafile(zipfile, txtfile):
 
 """Функция кодирования текстового raw-файла"""
 def encode_datafile(txtfile, zipfile):
-
-    lines = [line.rstrip('\n\r') for line in open(txtfile, 'rb').readlines()]
+    with open(txtfile, 'rb') as txt:
+        lines = [line.rstrip('\n\r') for line in txt.readlines()]
+    
     buf = BytesIO()
 
     buf.write(from_int32(len(lines))) #Записываем количество строк
@@ -83,10 +83,9 @@ def encode_datafile(txtfile, zipfile):
     if not exists(_dir):
         os.mkdir(_dir)
 
-    _zip = open(zipfile, 'wb')
-    _zip.write(from_int32(len(deflate)))
-    _zip.write(deflate)
-    _zip.close()
+    with open(zipfile, 'wb') as _zip:
+        _zip.write(from_int32(len(deflate)))
+        _zip.write(deflate)
 
 
 """Функция рекурсивного обхода и декодирования файлов
