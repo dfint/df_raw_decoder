@@ -25,9 +25,9 @@ def decode_datafile(zipfile, txtfile):
         result = []
         
         file_path, fn = os.path.split(zipfile)
-        indexFile = False
-        if fn == 'index': #Файл index имеет туже структуру, но немного "зашифрован"
-            indexFile = True
+        
+        # Файл index имеет туже структуру, но немного "зашифрован"
+        indexFile = fn == 'index'
 
         for line in range(lines_count):
             _len = from_bytes(buf.read(4)) #Длина строки
@@ -62,9 +62,9 @@ def encode_datafile(txtfile, zipfile):
     buf.write(from_int32(len(lines))) #Записываем количество строк
 
     file_path, fn = os.path.split(zipfile)
-    indexFile = False
-    if fn == 'index': #Файл index имеет туже структуру, но немного "зашифрован"
-        indexFile = True
+    
+    # Файл index имеет туже структуру, но немного "зашифрован"
+    indexFile = fn == 'index'
 
     for line in lines:
         _len = len(line)
