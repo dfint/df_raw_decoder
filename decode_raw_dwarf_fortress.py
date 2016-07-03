@@ -37,7 +37,7 @@ def decode_datafile(zipfile, txtfile):
             _str = buf.read(_len)
 
             if indexFile:
-                _str = bytes([(-(i%5)-c) % 256 for i,c in enumerate(_str)])
+                _str = bytes([(255-(i%5)-c) % 256 for i,c in enumerate(_str)])
 
             result.append(_str)
 
@@ -71,7 +71,7 @@ def encode_datafile(txtfile, zipfile):
         buf.write(from_int32(_len))
         buf.write(from_int16(_len))
         if indexFile:
-            encoded = bytes([(-(i%5)-c) % 256 for i,c in enumerate(line)])
+            encoded = bytes([(255-(i%5)-c) % 256 for i,c in enumerate(line)])
             buf.write(encoded)
         else:
             buf.write(line)
