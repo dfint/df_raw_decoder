@@ -4,53 +4,54 @@ import zlib
 from io import BytesIO
 import os
 from os.path import isfile, isdir, exists, realpath, join as joinPath
+from typing import Iterable, BinaryIO
 
 from_bytes = lambda x: int.from_bytes(x, byteorder="little")
 from_int16 = lambda x: x.to_bytes(2, byteorder="little")
 from_int32 = lambda x: x.to_bytes(4, byteorder="little")
 
-"""Функция декодирования текстового raw-файла"""
+
+def decode_data(_zip: BinaryIO, decode=False) -> Iterable[bytes]:
+    zip_length = from_bytes(_zip.read(4))  # Первые 4 байта - длина последующего архива
+    deflate = _zip.read()
+    assert zip_length == len(deflate), 'Incorrect buffer size'
+
+    # Обработка файла
+    unpacked = zlib.decompress(deflate)
+    buf = BytesIO(unpacked)
+    lines_count = from_bytes(buf.read(4))  # Первые 4 байта - кол-во строк
+
+    for line in range(lines_count):
+        _len = from_bytes(buf.read(4))  # Длина строки
+        _len2 = from_bytes(buf.read(2))  # Она же еще раз?
+        assert _len == _len2, "Incorrect length of the line: {}".format(line)
+
+        _str = buf.read(_len)
+
+        if decode:
+            _str = bytes([(255 - (i % 5) - c) % 256 for i, c in enumerate(_str)])
+
+        yield _str
+
+
 def decode_datafile(zipfile, txtfile):
+    """Функция декодирования текстового raw-файла"""
+    _, fn = os.path.split(zipfile)
+
+    # Файл index имеет туже структуру, но немного "зашифрован"
+    is_index_file = fn == 'index'
+
+    _dir = os.path.dirname(txtfile)
+    if not exists(_dir):
+        os.mkdir(_dir)
+
     with open(zipfile, 'rb') as _zip:
-        zip_length = from_bytes(_zip.read(4)) #Первые 4 байта - длина последующего архива
-        deflate = _zip.read()
+        result = decode_data(_zip, is_index_file)
 
-    if zip_length == len(deflate):
-        #Обработка файла
-        unpacked = zlib.decompress(deflate)
-        buf = BytesIO()
-        buf.write(unpacked)
-        buf.seek(0)
-        lines_count = from_bytes(buf.read(4)) #Первые 4 байта - кол-во строк
-        result = []
-        
-        file_path, fn = os.path.split(zipfile)
-        
-        # Файл index имеет туже структуру, но немного "зашифрован"
-        indexFile = fn == 'index'
+    with open(txtfile, 'wb') as out_file:
+        for line in result:
+            out_file.write(line + b'\n')
 
-        for line in range(lines_count):
-            _len = from_bytes(buf.read(4)) #Длина строки
-            _len2 = from_bytes(buf.read(2)) #Она же еще раз?
-            if _len != _len2:
-                print("Incorrect length of the line:", line)
-            _str = buf.read(_len)
-
-            if indexFile:
-                _str = bytes([(255-(i%5)-c) % 256 for i,c in enumerate(_str)])
-
-            result.append(_str)
-
-        _dir = os.path.dirname(txtfile)
-        if not exists(_dir):
-            os.mkdir(_dir)
-            
-        with open(txtfile, 'wb') as out_file:
-            for line in result:
-                out_file.write(line + b'\n')
-         
-    else:
-        print('Incorrect length of the file:', zipfile)
 
 """Функция кодирования текстового raw-файла"""
 def encode_datafile(txtfile, zipfile):
