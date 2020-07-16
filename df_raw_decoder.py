@@ -50,7 +50,7 @@ def decode_datafile(zipfile, txtfile):
                 out_file.write(line + b'\n')
          
     else:
-        print('Incorrect length of the file:', filename)
+        print('Incorrect length of the file:', zipfile)
 
 """Функция кодирования текстового raw-файла"""
 def encode_datafile(txtfile, zipfile):
