@@ -46,7 +46,7 @@ def decode_datafile(zipfile, txtfile):
         os.mkdir(_dir)
 
     with open(zipfile, 'rb') as _zip:
-        result = decode_data(_zip, is_index_file)
+        result = list(decode_data(_zip, is_index_file))
 
     with open(txtfile, 'wb') as out_file:
         for line in result:
