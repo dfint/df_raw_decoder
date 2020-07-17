@@ -101,11 +101,11 @@ def decode_directory(directory, outdir):
     """Функция рекурсивного обхода и декодирования файлов
     Ищет файлы в каталоге data/ и сохраняет в data_src/"""
     # Пробуем обрабатывать все файлы, у которых нет расширения
-    for root, directories, files in os.walk(frompath):
+    for root, directories, files in os.walk(directory):
         for file in files:
             fn, ext = os.path.splitext(file)
             if ext == "":
-                new_path = root.replace(frompath, topath)
+                new_path = root.replace(directory, outdir)
                 decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
 
 
@@ -136,8 +136,7 @@ func = {"directory":{"--decode":decode_directory,"--encode":encode_directory,
                            "-d":decode_datafile,       "-e":encode_datafile}}
 
 
-
-if __name__ == '__main__':
+def main():
     if len(sys.argv) < 4:
         print(usage)
         exit()
@@ -194,3 +193,7 @@ if __name__ == '__main__':
     else:
         print(usage)
         exit()
+
+
+if __name__ == '__main__':
+    main()
