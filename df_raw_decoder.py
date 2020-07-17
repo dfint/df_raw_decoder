@@ -4,7 +4,7 @@ import zlib
 from io import BytesIO
 import os
 from os.path import isfile, isdir, exists, realpath, join as joinPath
-from typing import Iterable, BinaryIO
+from typing import Iterable, BinaryIO, List
 
 from_bytes = lambda x: int.from_bytes(x, byteorder="little")
 from_int16 = lambda x: x.to_bytes(2, byteorder="little")
@@ -53,25 +53,16 @@ def decode_datafile(zipfile, txtfile):
             out_file.write(line + b'\n')
 
 
-"""Функция кодирования текстового raw-файла"""
-def encode_datafile(txtfile, zipfile):
-    with open(txtfile, 'rb') as txt:
-        lines = [line.rstrip(b'\n\r') for line in txt.readlines()]
-    
+def encode_data(lines: List[bytes], encode=False) -> bytes:
     buf = BytesIO()
 
-    buf.write(from_int32(len(lines))) #Записываем количество строк
-
-    file_path, fn = os.path.split(zipfile)
-    
-    # Файл index имеет туже структуру, но немного "зашифрован"
-    indexFile = fn == 'index'
+    buf.write(from_int32(len(lines)))  # Записываем количество строк
 
     for line in lines:
         _len = len(line)
         buf.write(from_int32(_len))
         buf.write(from_int16(_len))
-        if indexFile:
+        if encode:
             encoded = bytes([(255-(i%5)-c) % 256 for i,c in enumerate(line)])
             buf.write(encoded)
         else:
@@ -79,6 +70,21 @@ def encode_datafile(txtfile, zipfile):
 
     deflate = zlib.compress(buf.getvalue())
     buf.close()
+
+    return deflate
+
+
+def encode_datafile(txtfile, zipfile):
+    """Функция кодирования текстового raw-файла"""
+    with open(txtfile, 'rb') as txt:
+        lines = [line.rstrip(b'\n\r') for line in txt.readlines()]
+
+    _, fn = os.path.split(zipfile)
+    
+    # Файл index имеет туже структуру, но немного "зашифрован"
+    is_index_file = fn == 'index'
+
+    deflate = encode_data(lines, is_index_file)
 
     _dir = os.path.dirname(zipfile)
     if not exists(_dir):
