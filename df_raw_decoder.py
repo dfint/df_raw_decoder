@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 
 import zlib
-from io import BytesIO
 import os
+import sys
+
+from io import BytesIO
 from os.path import isfile, isdir, exists, realpath, join as joinPath
 from typing import Iterable, BinaryIO, List
 
@@ -63,7 +65,7 @@ def encode_data(lines: List[bytes], encode=False) -> bytes:
         buf.write(from_int32(_len))
         buf.write(from_int16(_len))
         if encode:
-            encoded = bytes([(255-(i%5)-c) % 256 for i,c in enumerate(line)])
+            encoded = bytes([(255 - (i % 5) - c) % 256 for i, c in enumerate(line)])
             buf.write(encoded)
         else:
             buf.write(line)
@@ -80,7 +82,7 @@ def encode_datafile(txtfile, zipfile):
         lines = [line.rstrip(b'\n\r') for line in txt.readlines()]
 
     _, fn = os.path.split(zipfile)
-    
+
     # Файл index имеет туже структуру, но немного "зашифрован"
     is_index_file = fn == 'index'
 
@@ -95,32 +97,29 @@ def encode_datafile(txtfile, zipfile):
         _zip.write(deflate)
 
 
-"""Функция рекурсивного обхода и декодирования файлов
-Ищет файлы в каталоге data/ и сохраняет в data_src/"""
 def decode_directory(directory, outdir):
-
-    #Пробуем обрабатывать все файлы, у которых нет расширения
+    """Функция рекурсивного обхода и декодирования файлов
+    Ищет файлы в каталоге data/ и сохраняет в data_src/"""
+    # Пробуем обрабатывать все файлы, у которых нет расширения
     for root, directories, files in os.walk(frompath):
         for file in files:
             fn, ext = os.path.splitext(file)
             if ext == "":
                 new_path = root.replace(frompath, topath)
                 decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
-            
 
 
 def encode_directory(inputdir, outputdir):
-
-    #Пробуем обрабатывать все файлы с расширением .txt
+    # Пробуем обрабатывать все файлы с расширением .txt
     for root, directories, files in os.walk(inputdir):
         for file in files:
-            fn, ext = os.path.splitext(file) #Получаем имя файла без .txt
+            fn, ext = os.path.splitext(file)  # Получаем имя файла без .txt
             if ext == ".txt":
                 new_path = root.replace(inputdir, outputdir)
                 encode_datafile(joinPath(root, file), joinPath(new_path, fn))
 
 
-usage="""Dwarf Fortress RAW decoder/encoder
+usage = """Dwarf Fortress RAW decoder/encoder
 Usage:
 df_enc.py [options] <inputDir>  <outputDir>
 df_enc.py [options] <inputFile> <outputFile>
@@ -136,7 +135,7 @@ func = {"directory":{"--decode":decode_directory,"--encode":encode_directory,
         "file"     :{"--decode":decode_datafile, "--encode":encode_datafile,
                            "-d":decode_datafile,       "-e":encode_datafile}}
 
-import sys
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
@@ -155,44 +154,43 @@ if __name__ == '__main__':
             overwrite = True
 
     frompath = realpath(frompath)
-    topath   = realpath(topath)
+    topath = realpath(topath)
 
     print("action:", action)
-    print("overWrite:",overwrite)
+    print("overWrite:", overwrite)
     print("frompath:", frompath)
     print("topath:", topath)
-
 
     if action:
         if exists(frompath):
             if isdir(frompath):
-                #Если цель - каталог
+                # Если цель - каталог
                 if exists(topath):
                     if not overwrite:
                         answer = input("Directory %s already exists, overwrite? [y/N] " % topath)
-                        if not (answer in ["y","Y"]):
+                        if not (answer in ["y", "Y"]):
                             print("Interrupted by the user")
                             exit()
-                
-                #Обработка каталога, в зависимости от выбранного действия
+
+                # Обработка каталога, в зависимости от выбранного действия
                 func["directory"][action](frompath, topath)
-                    
+
             elif isfile(frompath):
-                #Если цель - один файл
+                # Если цель - один файл
                 if exists(topath):
                     if not overwrite:
                         answer = input("File %s already exists, overwrite? [y/N] " % topath)
-                        if not (answer in ["y","Y"]):
+                        if not (answer in ["y", "Y"]):
                             print("Interrupted by the user")
                             exit()
-                        
-                #Обработка файла, в зависимости от выбранного действия
+
+                # Обработка файла, в зависимости от выбранного действия
                 func["file"][action](frompath, topath)
             else:
                 print("File type not recognized")
         else:
             print("Given path of the source directory doesn't exist")
-        
+
     else:
         print(usage)
         exit()
