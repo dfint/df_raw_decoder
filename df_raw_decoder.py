@@ -48,7 +48,7 @@ def decode_datafile(zipfile, txtfile):
     """Функция декодирования текстового raw-файла"""
     _, fn = os.path.split(zipfile)
 
-    # Файл index имеет туже структуру, но немного "зашифрован"
+    # Файл index имеет ту же структуру, но немного "зашифрован"
     is_index_file = fn == 'index'
 
     _dir = os.path.dirname(txtfile)
@@ -81,7 +81,7 @@ def encode_data(lines: List[bytes], encode=False) -> bytes:
     deflate = zlib.compress(buf.getvalue())
     buf.close()
 
-    return deflate
+    return from_int32(len(deflate)) + deflate
 
 
 def encode_datafile(txtfile, zipfile):
@@ -91,18 +91,17 @@ def encode_datafile(txtfile, zipfile):
 
     _, fn = os.path.split(zipfile)
 
-    # Файл index имеет туже структуру, но немного "зашифрован"
+    # Файл index имеет ту же структуру, но немного "зашифрован"
     is_index_file = fn == 'index'
 
-    deflate = encode_data(lines, is_index_file)
+    data = encode_data(lines, is_index_file)
 
     _dir = os.path.dirname(zipfile)
     if not exists(_dir):
         os.mkdir(_dir)
 
     with open(zipfile, 'wb') as _zip:
-        _zip.write(from_int32(len(deflate)))
-        _zip.write(deflate)
+        _zip.write(data)
 
 
 def decode_directory(directory, outdir):
