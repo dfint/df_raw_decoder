@@ -5,12 +5,20 @@ import os
 import sys
 
 from io import BytesIO
-from os.path import isfile, isdir, exists, realpath, join as joinPath
+from os.path import isfile, isdir, exists, realpath, join as join_path
 from typing import Iterable, BinaryIO, List
 
-from_bytes = lambda x: int.from_bytes(x, byteorder="little")
-from_int16 = lambda x: x.to_bytes(2, byteorder="little")
-from_int32 = lambda x: x.to_bytes(4, byteorder="little")
+
+def from_bytes(x: bytes) -> int:
+    return int.from_bytes(x, byteorder="little")
+
+
+def from_int16(x: int) -> bytes:
+    return x.to_bytes(2, byteorder="little")
+
+
+def from_int32(x: int) -> bytes:
+    return x.to_bytes(4, byteorder="little")
 
 
 def decode_data(_zip: BinaryIO, decode=False) -> Iterable[bytes]:
@@ -106,7 +114,7 @@ def decode_directory(directory, outdir):
             fn, ext = os.path.splitext(file)
             if ext == "":
                 new_path = root.replace(directory, outdir)
-                decode_datafile(joinPath(root, file), joinPath(new_path, file) + ".txt")
+                decode_datafile(join_path(root, file), join_path(new_path, file) + ".txt")
 
 
 def encode_directory(inputdir, outputdir):
@@ -116,7 +124,7 @@ def encode_directory(inputdir, outputdir):
             fn, ext = os.path.splitext(file)  # Получаем имя файла без .txt
             if ext == ".txt":
                 new_path = root.replace(inputdir, outputdir)
-                encode_datafile(joinPath(root, file), joinPath(new_path, fn))
+                encode_datafile(join_path(root, file), join_path(new_path, fn))
 
 
 usage = """Dwarf Fortress RAW decoder/encoder
