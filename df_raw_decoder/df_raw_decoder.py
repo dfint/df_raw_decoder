@@ -1,8 +1,6 @@
 import zlib
-import os
 
 from io import BytesIO
-from os.path import exists, join as join_path
 from typing import Iterable, BinaryIO, List
 
 
@@ -45,25 +43,6 @@ def decode_data(_zip: BinaryIO, decode=False) -> Iterable[bytes]:
         yield line
 
 
-def decode_datafile(zipfile, txtfile):
-    """Функция декодирования текстового raw-файла"""
-    _, fn = os.path.split(zipfile)
-
-    # Файл index имеет ту же структуру, но немного "зашифрован"
-    is_index_file = fn == 'index'
-
-    _dir = os.path.dirname(txtfile)
-    if not exists(_dir):
-        os.mkdir(_dir)
-
-    with open(zipfile, 'rb') as _zip:
-        result = list(decode_data(_zip, is_index_file))
-
-    with open(txtfile, 'wb') as out_file:
-        for line in result:
-            out_file.write(line + b'\n')
-
-
 def encode_data(lines: List[bytes], encode=False) -> bytes:
     buf = BytesIO()
 
@@ -82,45 +61,3 @@ def encode_data(lines: List[bytes], encode=False) -> bytes:
     buf.close()
 
     return encode_to_int32(len(deflate)) + deflate
-
-
-def encode_datafile(txtfile, zipfile):
-    """Функция кодирования текстового raw-файла"""
-    with open(txtfile, 'rb') as txt:
-        lines = [line.rstrip(b'\n\r') for line in txt.readlines()]
-
-    _, fn = os.path.split(zipfile)
-
-    # Файл index имеет ту же структуру, но немного "зашифрован"
-    is_index_file = fn == 'index'
-
-    data = encode_data(lines, is_index_file)
-
-    _dir = os.path.dirname(zipfile)
-    if not exists(_dir):
-        os.mkdir(_dir)
-
-    with open(zipfile, 'wb') as _zip:
-        _zip.write(data)
-
-
-def decode_directory(directory, outdir):
-    """Функция рекурсивного обхода и декодирования файлов
-    Ищет файлы в каталоге data/ и сохраняет в data_src/"""
-    # Пробуем обрабатывать все файлы, у которых нет расширения
-    for root, directories, files in os.walk(directory):
-        for file in files:
-            fn, ext = os.path.splitext(file)
-            if ext == "":
-                new_path = root.replace(directory, outdir)
-                decode_datafile(join_path(root, file), join_path(new_path, file) + ".txt")
-
-
-def encode_directory(inputdir, outputdir):
-    # Пробуем обрабатывать все файлы с расширением .txt
-    for root, directories, files in os.walk(inputdir):
-        for file in files:
-            fn, ext = os.path.splitext(file)  # Получаем имя файла без .txt
-            if ext == ".txt":
-                new_path = root.replace(inputdir, outputdir)
-                encode_datafile(join_path(root, file), join_path(new_path, fn))
