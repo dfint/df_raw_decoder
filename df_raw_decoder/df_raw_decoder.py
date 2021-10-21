@@ -6,39 +6,43 @@ from os.path import exists, join as join_path
 from typing import Iterable, BinaryIO, List
 
 
-def from_bytes(x: bytes) -> int:
+def decode_int(x: bytes) -> int:
     return int.from_bytes(x, byteorder="little")
 
 
-def from_int16(x: int) -> bytes:
+def encode_to_int16(x: int) -> bytes:
     return x.to_bytes(2, byteorder="little")
 
 
-def from_int32(x: int) -> bytes:
+def encode_to_int32(x: int) -> bytes:
     return x.to_bytes(4, byteorder="little")
 
 
+def encode_decode_index_file_line(line: bytes) -> bytes:
+    return bytes([(255 - (i % 5) - c) % 256 for i, c in enumerate(line)])
+
+
 def decode_data(_zip: BinaryIO, decode=False) -> Iterable[bytes]:
-    zip_length = from_bytes(_zip.read(4))  # Первые 4 байта - длина последующего архива
+    zip_length = decode_int(_zip.read(4))  # Первые 4 байта - длина последующего архива
     deflate = _zip.read()
     assert zip_length == len(deflate), 'Incorrect buffer size'
 
     # Обработка файла
     unpacked = zlib.decompress(deflate)
     buf = BytesIO(unpacked)
-    lines_count = from_bytes(buf.read(4))  # Первые 4 байта - кол-во строк
+    lines_count = decode_int(buf.read(4))  # Первые 4 байта - кол-во строк
 
     for line in range(lines_count):
-        _len = from_bytes(buf.read(4))  # Длина строки
-        _len2 = from_bytes(buf.read(2))  # Она же еще раз?
-        assert _len == _len2, "Incorrect length of the line: {}".format(line)
+        len4 = decode_int(buf.read(4))  # Длина строки
+        len2 = decode_int(buf.read(2))  # Она же еще раз?
+        assert len4 == len2, "Incorrect length of the line: {}".format(line)
 
-        _str = buf.read(_len)
+        line = buf.read(len4)
 
         if decode:
-            _str = bytes([(255 - (i % 5) - c) % 256 for i, c in enumerate(_str)])
+            line = encode_decode_index_file_line(line)
 
-        yield _str
+        yield line
 
 
 def decode_datafile(zipfile, txtfile):
@@ -63,22 +67,21 @@ def decode_datafile(zipfile, txtfile):
 def encode_data(lines: List[bytes], encode=False) -> bytes:
     buf = BytesIO()
 
-    buf.write(from_int32(len(lines)))  # Записываем количество строк
+    buf.write(encode_to_int32(len(lines)))  # Записываем количество строк
 
     for line in lines:
-        _len = len(line)
-        buf.write(from_int32(_len))
-        buf.write(from_int16(_len))
+        buf.write(encode_to_int32(len(line)))
+        buf.write(encode_to_int16(len(line)))
+
         if encode:
-            encoded = bytes([(255 - (i % 5) - c) % 256 for i, c in enumerate(line)])
-            buf.write(encoded)
-        else:
-            buf.write(line)
+            line = encode_decode_index_file_line(line)
+
+        buf.write(line)
 
     deflate = zlib.compress(buf.getvalue())
     buf.close()
 
-    return from_int32(len(deflate)) + deflate
+    return encode_to_int32(len(deflate)) + deflate
 
 
 def encode_datafile(txtfile, zipfile):
