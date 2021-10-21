@@ -20,9 +20,9 @@ def encode_decode_index_file_line(line: bytes) -> bytes:
     return bytes([(255 - (i % 5) - c) % 256 for i, c in enumerate(line)])
 
 
-def decode_data(_zip: BinaryIO, decode=False) -> Iterable[bytes]:
-    zip_length = decode_int(_zip.read(4))  # Первые 4 байта - длина последующего архива
-    deflate = _zip.read()
+def decode_data(data: BinaryIO, decode=False) -> Iterable[bytes]:
+    zip_length = decode_int(data.read(4))  # Первые 4 байта - длина последующего архива
+    deflate = data.read()
     assert zip_length == len(deflate), 'Incorrect buffer size'
 
     # Обработка файла
