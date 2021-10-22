@@ -20,10 +20,16 @@ def encode_decode_index_file_line(line: bytes) -> bytes:
     return bytes([(255 - (i % 5) - c) % 256 for i, c in enumerate(line)])
 
 
+class DecodingException(Exception):
+    pass
+
+
 def decode_data(data: BinaryIO, decode=False) -> Iterable[bytes]:
     zip_length = decode_int(data.read(4))  # Первые 4 байта - длина последующего архива
     deflate = data.read()
-    assert zip_length == len(deflate), 'Incorrect buffer size'
+
+    if zip_length != len(deflate):
+        raise DecodingException("Incorrect buffer size. Expected: {}, Actual: {}".format(zip_length, len(deflate)))
 
     # Обработка файла
     unpacked = zlib.decompress(deflate)
@@ -33,7 +39,9 @@ def decode_data(data: BinaryIO, decode=False) -> Iterable[bytes]:
     for line in range(lines_count):
         len4 = decode_int(buf.read(4))  # Длина строки
         len2 = decode_int(buf.read(2))  # Она же еще раз?
-        assert len4 == len2, "Incorrect length of the line: {}".format(line)
+
+        if len4 != len2:
+            raise DecodingException("Incorrect length of the line: {!r}".format(line))
 
         line = buf.read(len4)
 
