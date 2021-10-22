@@ -1,7 +1,7 @@
 import zlib
 
 from io import BytesIO
-from typing import Iterable, BinaryIO, List
+from typing import BinaryIO, List, Iterator
 
 
 def decode_int(x: bytes) -> int:
@@ -24,7 +24,7 @@ class DecodingException(Exception):
     pass
 
 
-def decode_data(data: BinaryIO, decode=False) -> Iterable[bytes]:
+def decode_data(data: BinaryIO, decode=False) -> Iterator[bytes]:
     zip_length = decode_int(data.read(4))  # Первые 4 байта - длина последующего архива
     deflate = data.read()
 
@@ -66,6 +66,5 @@ def encode_data(lines: List[bytes], encode=False) -> bytes:
         buf.write(line)
 
     deflate = zlib.compress(buf.getvalue())
-    buf.close()
 
     return encode_to_int32(len(deflate)) + deflate
