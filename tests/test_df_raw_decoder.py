@@ -41,6 +41,14 @@ def test_invalid_line_length():
         next(decode_data(BytesIO(file)))
 
 
-def test_decode_encode_index_file_line():
-    line = b'test'
-    assert encode_decode_index_file_line(encode_decode_index_file_line(line)) == line
+@pytest.mark.parametrize("encoded,decoded", [
+    (b'\x96\x90\x99\x97\x83', b'index'),
+    (
+        b'\xcd\xce\x7f\xac\x89\x90\x97\x8b\x9b\x8e\x92\x99\x99\xdc\x99\x86\xde\xa9\x9b\x89\x91\xde\xbc\x98\x9a\x92\x8b',
+        b'20~Programmed by Tarn Adams'
+    ),
+    (b'\xcd\xca\x7f\xb8\x84\x9e\x8c\x97\xdc\xb5\x90\x8c\x89\x8a\x96\x8c\x8b', b'24~Dwarf Fortress'),
+])
+def test_decode_encode_index_file_line(encoded, decoded):
+    assert encode_decode_index_file_line(encoded) == decoded
+    assert encode_decode_index_file_line(encode_decode_index_file_line(encoded)) == encoded
