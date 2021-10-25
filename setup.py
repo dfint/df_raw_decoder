@@ -8,4 +8,5 @@ setup(name='df_raw_decoder',
       author_email='insolor@gmail.com',
       license='MIT',
       packages=find_packages(),
+      test_requirements=['pytest', 'pytest-cov'],
       zip_safe=False)
