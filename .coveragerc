@@ -11,3 +11,4 @@ ignore_errors = True
 omit =
     venv/*
     .venv/*
+    setup.py
