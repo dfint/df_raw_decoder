@@ -5,7 +5,7 @@ import pytest
 
 from df_raw_decoder import (
     decode_data, DecodingException, encode_to_int32, encode_to_int16, encode_data,
-    encode_decode_index_file_line
+    encode_decode_index_file_line, pack_data, unpack_data
 )
 
 
@@ -19,8 +19,13 @@ def test_invalid_file():
         next(decode_data(file))
 
 
+def test_pack_unpack():
+    lines = [b'Hello', b'World']
+    assert list(unpack_data(BytesIO(pack_data(lines)))) == lines
+
+
 def test_encode_decode():
-    lines = [b'test']
+    lines = [b'Hello', b'World']
     assert list(decode_data(BytesIO(encode_data(lines)))) == lines
     assert list(decode_data(BytesIO(encode_data(lines, True)), True)) == lines
 

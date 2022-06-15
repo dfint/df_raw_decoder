@@ -24,7 +24,7 @@ class DecodingException(Exception):
     pass
 
 
-def decode_data(data: BinaryIO, decode=False) -> Iterator[bytes]:
+def unpack_data(data: BinaryIO) -> Iterator[bytes]:
     zip_length = decode_int(data.read(4))  # Первые 4 байта - длина последующего архива
     deflate = data.read()
 
@@ -43,15 +43,17 @@ def decode_data(data: BinaryIO, decode=False) -> Iterator[bytes]:
         if len4 != len2:
             raise DecodingException("Incorrect length of the line: {!r}".format(line))
 
-        line = buf.read(len4)
-
-        if decode:
-            line = encode_decode_index_file_line(line)
-
-        yield line
+        yield buf.read(len4)
 
 
-def encode_data(lines: List[bytes], encode=False) -> bytes:
+def decode_data(data: BinaryIO, decode=False) -> Iterator[bytes]:
+    if decode:
+        return map(encode_decode_index_file_line, unpack_data(data))
+    else:
+        return unpack_data(data)
+
+
+def pack_data(lines: List[bytes]) -> bytes:
     buf = BytesIO()
 
     buf.write(encode_to_int32(len(lines)))  # Записываем количество строк
@@ -60,11 +62,15 @@ def encode_data(lines: List[bytes], encode=False) -> bytes:
         buf.write(encode_to_int32(len(line)))
         buf.write(encode_to_int16(len(line)))
 
-        if encode:
-            line = encode_decode_index_file_line(line)
-
         buf.write(line)
 
     deflate = zlib.compress(buf.getvalue())
 
     return encode_to_int32(len(deflate)) + deflate
+
+
+def encode_data(lines: List[bytes], encode=False) -> bytes:
+    if encode:
+        lines = [encode_decode_index_file_line(line) for line in lines]
+
+    return pack_data(lines)
