@@ -1,7 +1,7 @@
 import zlib
 
 from io import BytesIO
-from typing import BinaryIO, List, Iterator
+from typing import BinaryIO, Iterable, List, Iterator
 
 
 def decode_int(x: bytes) -> int:
@@ -46,7 +46,7 @@ def unpack_data(data: BinaryIO) -> Iterator[bytes]:
         yield buf.read(len4)
 
 
-def decode_data(data: BinaryIO, decode=False) -> Iterator[bytes]:
+def decode_data(data: BinaryIO, decode=False) -> Iterable[bytes]:
     if decode:
         return map(encode_decode_index_file_line, unpack_data(data))
     else:

@@ -1,5 +1,6 @@
 import zlib
 from io import BytesIO
+from hypothesis import given, strategies as st
 
 import pytest
 
@@ -19,13 +20,13 @@ def test_invalid_file():
         next(decode_data(file))
 
 
-def test_pack_unpack():
-    lines = [b'Hello', b'World']
+@given(st.lists(st.binary()))
+def test_pack_unpack(lines):
     assert list(unpack_data(BytesIO(pack_data(lines)))) == lines
 
 
-def test_encode_decode():
-    lines = [b'Hello', b'World']
+@given(st.lists(st.binary()))
+def test_encode_decode(lines):
     assert list(decode_data(BytesIO(encode_data(lines)))) == lines
     assert list(decode_data(BytesIO(encode_data(lines, True)), True)) == lines
 
