@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "df_raw_decoder"
-version = "1.0.0"
+version = "1.1.0"
 description = "Encoding and decoding of compressed raw files of Dwarf Fortress"
 authors = ["insolor <insolor@gmail.com>", "kateBy"]
 license = "MIT"
