@@ -1,7 +1,7 @@
 import zlib
 
 from io import BytesIO
-from typing import BinaryIO, List, Iterator
+from typing import BinaryIO, Iterator, Iterable, Sequence
 
 
 def decode_int(x: bytes) -> int:
@@ -46,15 +46,22 @@ def unpack_data(data: BinaryIO) -> Iterator[bytes]:
         yield buf.read(len4)
 
 
-def decode_data(data: BinaryIO, decode=False) -> Iterator[bytes]:
+def encode_decode_lines(lines: Iterable[bytes]) -> Iterator[bytes]:
+    return map(encode_decode_index_file_line, lines)
+
+
+def decode_data(data: BinaryIO, decode: bool = False) -> Iterator[bytes]:
     if decode:
-        return map(encode_decode_index_file_line, unpack_data(data))
+        return encode_decode_lines(unpack_data(data))
     else:
         return unpack_data(data)
 
 
-def pack_data(lines: List[bytes]) -> bytes:
+def pack_data(lines: Iterable[bytes]) -> bytes:
     buf = BytesIO()
+
+    if not isinstance(lines, Sequence):
+        lines = list(lines)
 
     buf.write(encode_to_int32(len(lines)))  # Записываем количество строк
 
@@ -69,8 +76,8 @@ def pack_data(lines: List[bytes]) -> bytes:
     return encode_to_int32(len(deflate)) + deflate
 
 
-def encode_data(lines: List[bytes], encode=False) -> bytes:
+def encode_data(lines: Iterable[bytes], encode: bool = False) -> bytes:
     if encode:
-        lines = [encode_decode_index_file_line(line) for line in lines]
+        lines = encode_decode_lines(lines)
 
     return pack_data(lines)

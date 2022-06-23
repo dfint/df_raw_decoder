@@ -1,8 +1,8 @@
 import zlib
 from io import BytesIO
-from hypothesis import given, strategies as st
 
 import pytest
+from hypothesis import given, strategies as st
 
 from df_raw_decoder import (
     decode_data,
@@ -57,12 +57,12 @@ def test_invalid_line_length(text):
 @pytest.mark.parametrize(
     "encoded,decoded",
     [
-        (b"\x96\x90\x99\x97\x83", b"index"),
+        (bytes.fromhex("96 90 99 97 83"), b"index"),
         (
-            b"\xcd\xce\x7f\xac\x89\x90\x97\x8b\x9b\x8e\x92\x99\x99\xdc\x99\x86\xde\xa9\x9b\x89\x91\xde\xbc\x98\x9a\x92\x8b",
+            bytes.fromhex("cd ce 7f ac 89 90 97 8b 9b 8e 92 99 99 dc 99 86 de a9 9b 89 91 de bc 98 9a 92 8b"),
             b"20~Programmed by Tarn Adams",
         ),
-        (b"\xcd\xca\x7f\xb8\x84\x9e\x8c\x97\xdc\xb5\x90\x8c\x89\x8a\x96\x8c\x8b", b"24~Dwarf Fortress"),
+        (bytes.fromhex("cd ca 7f b8 84 9e 8c 97 dc b5 90 8c 89 8a 96 8c 8b"), b"24~Dwarf Fortress"),
     ],
 )
 def test_decode_encode_index_file_line(encoded, decoded):
