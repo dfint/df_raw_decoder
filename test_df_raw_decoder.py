@@ -27,8 +27,8 @@ def test_invalid_file():
 
 
 @st.composite
-def encoded_strings(draw, *args, **kwargs) -> bytes:
-    return draw(st.text(*args, **kwargs)).encode("utf-8")
+def encoded_strings(draw, *args, encoding="utf-8", **kwargs) -> bytes:
+    return draw(st.text(*args, **kwargs)).encode(encoding)
 
 
 @given(st.lists(encoded_strings()))
