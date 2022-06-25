@@ -26,12 +26,17 @@ def test_invalid_file():
         next(decode_data(file))
 
 
-@given(st.lists(st.binary()))
+@st.composite
+def encoded_strings(draw, *args, **kwargs) -> bytes:
+    return draw(st.text(*args, **kwargs)).encode("utf-8")
+
+
+@given(st.lists(encoded_strings()))
 def test_pack_unpack(lines):
     assert list(unpack_data(BytesIO(pack_data(lines)))) == lines
 
 
-@given(st.lists(st.binary()))
+@given(st.lists(encoded_strings()))
 def test_encode_decode(lines):
     assert list(decode_data(BytesIO(encode_data(lines)))) == lines
     assert list(decode_data(BytesIO(encode_data(lines, True)), True)) == lines
