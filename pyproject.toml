@@ -10,7 +10,7 @@ python = "^3.7"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.0"
-pytest-cov = "^3.0.0"
+pytest-cov = "^4.1.0"
 flake8 = "^5.0.4"
 hypothesis = "^6.79.4"
 black = "^23.3.0"
